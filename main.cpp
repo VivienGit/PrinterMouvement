@@ -1,20 +1,23 @@
 #include <stdio.h>
-
+#include <windows.h>
+#include <string.h>
 #include <QDebug>
 #include <QtSerialPort/QSerialPort>
 #include <QCoreApplication>
 
+// To write and read in the bash window
+QTextStream in(stdin);
+QTextStream out(stdout);
 
 int main(int argc, char *argv[])
 {
+    // To avoid timer error message (qt application without GUI)
     QCoreApplication a(argc, argv);
 
-    QTextStream in(stdin);
-    QTextStream out(stdout);
+    out << "The application juste started" << endl << endl;
 
+    // Configuration of the serial port
     QSerialPort serial;
-    out << "The application juste started" << endl;
-
     serial.setPortName("COM18");
     serial.setBaudRate((quint32)250000);
     serial.open(QIODevice::ReadWrite);
@@ -23,24 +26,58 @@ int main(int argc, char *argv[])
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
 
+    // Waiting for the printer initialization
+    out << "Waiting for the printer initialization ..." << endl << endl;
+    Sleep(7000); // wait five second
 
-    QString line;
-    in >> line;
+    out << "Port connection status : " << serial.isOpen() << endl << endl;
 
-    out << "Is the port open ?" << serial.isOpen() << endl;
+    QString myLine;
+    out << "Type \"exit\" to exit" << endl << endl;
+    BOOLEAN exit = false;
+    QByteArray ba;
+    char *myCharLine;
 
-    serial.write("G");
-    serial.waitForBytesWritten(-1);
-    serial.write("2");
-    serial.waitForBytesWritten(-1);
-    serial.write("8");
+
+    // Setting the speed
+    const char* setSpeed18000 = "G1F18000";
+    serial.write(setSpeed18000);
     serial.waitForBytesWritten(-1);
     serial.write("\n");
     serial.waitForBytesWritten(-1);
 
+//    // Setting to relative
+//    const char* setRelative = "G91";
+//    serial.write(setRelative);
+//    serial.waitForBytesWritten(-1);
+//    serial.write("\n");
+//    serial.waitForBytesWritten(-1);
+
+    do
+    {
+        out << "Type the command you wanna send : " << endl;
+        in >> myLine;
+        if (myLine != "exit")
+        {
+            ba = myLine.toLatin1();
+            myCharLine = ba.data();
+            serial.write(myCharLine);
+            serial.waitForBytesWritten(-1);
+            serial.write("\n");
+            serial.waitForBytesWritten(-1);
+            out << endl;
+        }else
+            exit = true;
+    }while (!exit);
+
+    // Put at origin before closing the app and the communication
+    serial.write("G28\n");
+    serial.waitForBytesWritten(-1);
+
     serial.close();
 
-    out << "Is the port open ?" << serial.isOpen() << endl;
+    out << "Port connection status : " << serial.isOpen() << endl << endl;
+    out << "The application juste ended" << endl << endl;
 
     return 0;
 }
