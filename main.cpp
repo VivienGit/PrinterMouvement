@@ -5,6 +5,8 @@
 #include <QtSerialPort/QSerialPort>
 #include <QCoreApplication>
 
+#include "mydraws.h"
+
 // To write and read in the bash window
 QTextStream in(stdin);
 QTextStream out(stdout);
@@ -46,6 +48,12 @@ int main(int argc, char *argv[])
     serial.write("\n");
     serial.waitForBytesWritten(-1);
 
+    // Put at origin
+    serial.write("G28\n");
+    serial.waitForBytesWritten(-1);
+
+    Sleep(3000);
+
 //    // Setting to relative
 //    const char* setRelative = "G91";
 //    serial.write(setRelative);
@@ -57,7 +65,22 @@ int main(int argc, char *argv[])
     {
         out << "Type the command you wanna send : " << endl;
         in >> myLine;
-        if (myLine != "exit")
+        if (myLine == "exit")
+        {
+            exit = true;
+        }
+        else if (myLine == "draw")
+        {
+           for (int i = 0; i<25; i++)
+           {
+               serial.write(helloWorld[i]);
+               serial.waitForBytesWritten(-1);
+               serial.write("\n");
+               serial.waitForBytesWritten(-1);
+               Sleep(1000);
+           }
+        }
+        else
         {
             ba = myLine.toLatin1();
             myCharLine = ba.data();
@@ -66,8 +89,8 @@ int main(int argc, char *argv[])
             serial.write("\n");
             serial.waitForBytesWritten(-1);
             out << endl;
-        }else
-            exit = true;
+        }
+
     }while (!exit);
 
     // Put at origin before closing the app and the communication
@@ -76,7 +99,7 @@ int main(int argc, char *argv[])
 
     serial.close();
 
-    out << "Port connection status : " << serial.isOpen() << endl << endl;
+    out << endl << "Port connection status : " << serial.isOpen() << endl << endl;
     out << "The application juste ended" << endl << endl;
 
     return 0;
