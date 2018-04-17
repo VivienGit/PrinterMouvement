@@ -1,116 +1,71 @@
 #include <stdio.h>
 #include <windows.h>
-#include <string.h>
 #include <QDebug>
 #include <QtSerialPort/QSerialPort>
 #include <QCoreApplication>
-#include <QVector>
 
-#include "mydraws.h"
+#include "printer.h"
+#include "menu.h"
+
+using namespace std;
 
 // To write and read in the bash window
 QTextStream in(stdin);
 QTextStream out(stdout);
 
-
-
 int main(int argc, char *argv[])
 {
     // To avoid timer error message (qt application without GUI)
     QCoreApplication a(argc, argv);
-
     out << "The application juste started" << endl << endl;
 
-    // Configuration of the serial port
-    QSerialPort serial;
-    serial.setPortName("COM18");
-    serial.setBaudRate((quint32)250000);
-    serial.open(QIODevice::ReadWrite);
-    serial.setDataBits(QSerialPort::Data8);
-    serial.setParity(QSerialPort::NoParity);
-    serial.setStopBits(QSerialPort::OneStop);
-    serial.setFlowControl(QSerialPort::NoFlowControl);
-
-    // Waiting for the printer initialization
-    out << "Waiting for the printer initialization ..." << endl << endl;
-    Sleep(7000); // wait five second
-
-    out << "Port connection status : " << serial.isOpen() << endl << endl;
+    // Declaration
+    Printer printer;
+    Menu menu;
 
     QString myLine;
-    out << "Type \"exit\" to exit" << endl << endl;
     BOOLEAN exit = false;
     QByteArray ba;
     char *myCharLine;
-    QByteArray theArray;
 
-    QVector<char*> myVector;
-
-    myVector.push_back("G1X150Y150");
-    myVector.push_back("G1X100Y100");
+    // Configuration of the serial port
+    printer.initSerial("COM18", (quint32)250000);
 
     // Setting the speed
-    const char* setSpeed18000 = "G1F18000";
-    serial.write(setSpeed18000);
-    serial.waitForBytesWritten(-1);
-    serial.write("\n");
-    serial.waitForBytesWritten(-1);
+    printer.setSpeed18000();
 
-    // Put at origin
-    serial.write("G28\n");
-    serial.waitForBytesWritten(-1);
+    // Go home
+    printer.goHome();
 
-    Sleep(3000);
-
-//    // Setting to relative
-//    const char* setRelative = "G91";
-//    serial.write(setRelative);
-//    serial.waitForBytesWritten(-1);
-//    serial.write("\n");
-//    serial.waitForBytesWritten(-1);
+    menu.printInfo();
 
     do
     {
-        out << "Type the command you wanna send : " << endl;
-        in >> myLine;
+        myLine = menu.getSelection();
         if (myLine == "exit")
         {
             exit = true;
         }
         else if (myLine == "draw")
         {
-           for (int i = 0; i < myVector.size(); i++)
-           {
-               serial.write(myVector[i]);
-               serial.waitForBytesWritten(-1);
-               serial.write("\n");
-               serial.waitForBytesWritten(-1);
-               Sleep(100);
-           }
+            printer.draw();
         }
         else
         {
             ba = myLine.toLatin1();
             myCharLine = ba.data();
-            serial.write(myCharLine);
-            serial.waitForBytesWritten(-1);
-            serial.write("\n");
-            serial.waitForBytesWritten(-1);
-
-
+            printer.write(myCharLine);
             out << endl;
         }
 
     }while (!exit);
 
     // Put at origin before closing the app and the communication
-    serial.write("G28\n");
-    serial.waitForBytesWritten(-1);
+    printer.goHome();
 
-    serial.close();
+    // Close communication
+    printer.closeSerial();
 
-    out << endl << "Port connection status : " << serial.isOpen() << endl << endl;
     out << "The application juste ended" << endl << endl;
-
     return 0;
 }
