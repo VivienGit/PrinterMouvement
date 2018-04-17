@@ -4,12 +4,15 @@
 #include <QDebug>
 #include <QtSerialPort/QSerialPort>
 #include <QCoreApplication>
+#include <QVector>
 
 #include "mydraws.h"
 
 // To write and read in the bash window
 QTextStream in(stdin);
 QTextStream out(stdout);
+
+
 
 int main(int argc, char *argv[])
 {
@@ -39,7 +42,12 @@ int main(int argc, char *argv[])
     BOOLEAN exit = false;
     QByteArray ba;
     char *myCharLine;
+    QByteArray theArray;
 
+    QVector<char*> myVector;
+
+    myVector.push_back("G1X150Y150");
+    myVector.push_back("G1X100Y100");
 
     // Setting the speed
     const char* setSpeed18000 = "G1F18000";
@@ -71,13 +79,13 @@ int main(int argc, char *argv[])
         }
         else if (myLine == "draw")
         {
-           for (int i = 0; i<25; i++)
+           for (int i = 0; i < myVector.size(); i++)
            {
-               serial.write(helloWorld[i]);
+               serial.write(myVector[i]);
                serial.waitForBytesWritten(-1);
                serial.write("\n");
                serial.waitForBytesWritten(-1);
-               Sleep(1000);
+               Sleep(100);
            }
         }
         else
@@ -88,6 +96,8 @@ int main(int argc, char *argv[])
             serial.waitForBytesWritten(-1);
             serial.write("\n");
             serial.waitForBytesWritten(-1);
+
+
             out << endl;
         }
 
